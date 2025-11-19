@@ -44,6 +44,8 @@ function App() {
     filterMockData,
     setApiDataAndSwitch,
     clearApiData,
+    clearApiDataOnly,
+    switchToApiMode,
   } = useAppContext();
 
   const { notification, showSuccess, showError } = useNotification();
@@ -128,14 +130,16 @@ function App() {
       return;
     }
 
-    // Clear old API data immediately before starting new search
-    clearApiData();
+    // Switch to API mode and clear old data without changing mode
+    switchToApiMode();
+    clearApiDataOnly();
 
     // API mode - send all URLs to backend at once
     const urlsToFetch = urls.length === 1 ? urls[0] : urls;
     
     fetchLocations(urlsToFetch, {
       onSuccess: (data) => {
+        console.log('✅ Fetch successful, data received:', data);
         setApiDataAndSwitch(data);
         const urlCount = urls.length;
         const message = urlCount === 1 
@@ -144,7 +148,7 @@ function App() {
         showSuccess(message);
       },
       onError: (error) => {
-        console.error('API Error:', error);
+        console.error('❌ API Error:', error);
         let errorMessage = 'Something went wrong. ';
 
         if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
@@ -156,6 +160,9 @@ function App() {
         }
 
         showError(errorMessage);
+      },
+      onSettled: () => {
+        console.log('🏁 Mutation settled (completed or failed)');
       },
     });
   };

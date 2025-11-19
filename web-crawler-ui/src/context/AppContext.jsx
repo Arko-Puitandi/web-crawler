@@ -66,9 +66,19 @@ export const AppProvider = ({ children }) => {
     setFilteredMockData(mockLocations);
   };
 
+  // Clear API data without switching mode (for new search)
+  const clearApiDataOnly = () => {
+    setApiData([]);
+  };
+
   // Set API data and switch to API mode
   const setApiDataAndSwitch = (data) => {
     setApiData(data);
+    setUseMockData(false);
+  };
+
+  // Switch to API mode (for loading state)
+  const switchToApiMode = () => {
     setUseMockData(false);
   };
 
@@ -91,7 +101,9 @@ export const AppProvider = ({ children }) => {
     filterMockData,
     resetMockFilter,
     clearApiData,
+    clearApiDataOnly,
     setApiDataAndSwitch,
+    switchToApiMode,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
