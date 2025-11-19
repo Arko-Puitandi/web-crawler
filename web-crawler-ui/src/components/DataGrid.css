@@ -1,0 +1,330 @@
+/* DataGrid Component Styles */
+
+.datagrid-container {
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.datagrid-container.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.column-visibility-panel {
+  padding: 1rem;
+  background: var(--color-bg-tertiary);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.column-visibility-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 0.75rem;
+}
+
+.column-visibility-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.column-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.column-toggle-label:hover {
+  background: var(--color-bg-hover);
+  border-color: var(--color-primary);
+  color: var(--color-text-primary);
+}
+
+.column-toggle-label input[type="checkbox"] {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.table-wrapper {
+  overflow: auto;
+  max-height: 600px;
+  position: relative;
+}
+
+/* Custom scrollbar for dark theme */
+.table-wrapper::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+  background: var(--color-bg-secondary);
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+  border-radius: 6px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primary);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg-tertiary);
+}
+
+.data-table th {
+  background: linear-gradient(135deg, var(--color-bg-tertiary) 0%, var(--color-bg-hover) 100%);
+  border-bottom: 2px solid var(--color-border-light);
+  padding: 1rem 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  z-index: 1;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover {
+  background: var(--color-primary);
+  opacity: 0.5;
+}
+
+.resize-handle:active {
+  background: var(--color-primary);
+  opacity: 0.8;
+}
+
+.data-table th.sortable {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.data-table th.sortable:hover {
+  background: linear-gradient(135deg, var(--color-bg-hover) 0%, var(--color-border) 100%);
+}
+
+.data-table th.sorted {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.3) 100%);
+  color: var(--color-primary-light);
+}
+
+.sort-indicator {
+  margin-left: 0.5rem;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+}
+
+.data-table th.checkbox-col,
+.data-table td.checkbox-col {
+  width: 50px;
+  text-align: center;
+  padding: 0.75rem;
+}
+
+.data-table tbody tr {
+  transition: all 0.15s;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.data-table tbody tr:nth-child(even) {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.data-table tbody tr:hover {
+  background: var(--color-bg-hover);
+  transform: scale(1.001);
+}
+
+.data-table tbody tr.selected {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-left: 3px solid var(--color-primary);
+}
+
+.data-table td {
+  padding: 0.875rem 0.75rem;
+  color: var(--color-text-secondary);
+  vertical-align: top;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-data-row {
+  text-align: center;
+  padding: 3rem !important;
+  color: var(--color-text-tertiary);
+  font-size: 1rem;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--color-bg-tertiary);
+  border-top: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 1rem;
+  overflow: visible;
+  position: relative;
+  z-index: 1;
+}
+
+.pagination-info {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.pagination-info .total-count {
+  color: var(--color-text-tertiary);
+  margin-left: 0.5rem;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.pagination-button {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.pagination-button:disabled {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.page-size-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.page-size-select {
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.page-size-select:hover {
+  border-color: var(--color-primary);
+}
+
+.page-size-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.export-buttons-wrapper {
+  margin-left: 1rem;
+  position: relative;
+  z-index: 10;
+}
+
+.selection-info {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.15) 100%);
+  color: var(--color-primary-light);
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+  animation: slideIn 0.3s ease-out;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+@media (max-width: 768px) {
+  .column-visibility-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .table-wrapper {
+    max-height: 400px;
+  }
+
+  .data-table {
+    font-size: 0.8rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem;
+  }
+
+  .pagination-wrapper {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pagination-controls {
+    justify-content: space-between;
+  }
+}
