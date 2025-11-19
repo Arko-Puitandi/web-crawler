@@ -15,6 +15,11 @@ const heuristicExtractorService = require('./heuristic-extractor.service');
 const robotsService = require('./robots.service');
 const logger = require('../utils/logger');
 
+// NEW: Enterprise-grade extraction services
+const pageClassifierService = require('./page-classifier.service');
+const structuredDataExtractorService = require('./structured-data-extractor.service');
+const linkExplorerService = require('./link-explorer.service');
+
 class CrawlerService {
   async crawlUrls(urls, options = {}) {
     // Demo mode: Return mock data if in development without proper setup
@@ -296,19 +301,52 @@ class CrawlerService {
       // Get page content
       const html = await page.content();
 
-      // Strategy 1: Extract locations from HTML using comprehensive extractor
+      // NEW: Stage 2 - Semantic Intent Classification
+      logger.info('📊 Stage 2: Classifying page...');
+      const classification = pageClassifierService.classifyPage(url, html);
+      const extractionStrategy = pageClassifierService.getExtractionStrategy(classification);
+      logger.info(`📊 Page Type: ${classification.type} (confidence: ${classification.confidence}, priority: ${classification.priority})`);
+      logger.info(`🎯 Strategy: ${extractionStrategy.description}`);
+
+      // NEW: Stage 3 - Structured Data Extraction (BEST SOURCE - 95% confidence)
+      logger.info('📋 Stage 3: Extracting structured data (JSON-LD, Microdata)...');
+      const structuredLocations = structuredDataExtractorService.extractStructuredData(html, url);
+      allRawLocations.push(...structuredLocations);
+      logger.info(`📋 Structured Data: ${structuredLocations.length} locations (HIGH confidence)`);
+
+      // NEW: Stage 8 - Multi-Page Exploration (if homepage or low-value page)
+      if (classification.priority >= 3 && !url.includes('/contact') && !url.includes('/location')) {
+        logger.info('🔗 Stage 8: Discovering high-value pages...');
+        const discoveredUrls = linkExplorerService.discoverLocationPages(url, html);
+        const topUrls = linkExplorerService.limitExploration(discoveredUrls, 5);
+        
+        if (topUrls.length > 0) {
+          logger.info(`🔗 Found ${topUrls.length} high-value pages to explore`);
+          for (const discoveredUrl of topUrls) {
+            if (discoveredUrl !== url) { // Avoid re-crawling same page
+              logger.info(`🔗 Exploring: ${discoveredUrl}`);
+              const nestedLocs = await this.crawlSingleUrl(browser, discoveredUrl);
+              allRawLocations.push(...nestedLocs);
+            }
+          }
+        }
+      }
+
+      // Strategy 1: Extract locations from HTML using comprehensive extractor (80% confidence)
       const locations1 = await locationExtractorService.extractAllLocations(html, url);
-      allRawLocations.push(...locations1);
+      const locations1WithConfidence = locations1.map(loc => ({ ...loc, confidence: loc.confidence || 0.80, level: 'MEDIUM-HIGH' }));
+      allRawLocations.push(...locations1WithConfidence);
       logger.info(`📍 Strategy 1 (LocationExtractor): ${locations1.length} locations`);
 
-      // Strategy 2: Heuristic text extraction (with confidence filter)
+      // Strategy 2: Heuristic text extraction (75% confidence - already filtered)
       const locations2 = heuristicExtractorService.extractHeuristicAddresses(html, url);
       // Only keep high-confidence heuristic matches (0.75+) to reduce false positives
       const highConfidenceLocations = locations2.filter(loc => (loc.confidence || 0) >= 0.75);
-      allRawLocations.push(...highConfidenceLocations);
+      const locations2WithConfidence = highConfidenceLocations.map(loc => ({ ...loc, confidence: loc.confidence || 0.75, level: 'MEDIUM-HIGH' }));
+      allRawLocations.push(...locations2WithConfidence);
       logger.info(`📍 Strategy 2 (Heuristic): ${locations2.length} found, ${highConfidenceLocations.length} high-confidence kept`);
 
-      // Strategy 3: Detect maps and extract coordinates
+      // Strategy 3: Detect maps and extract coordinates (90% confidence)
       const maps = mapDetectorService.detectMapIframes(html, url);
       const mapCoords = mapDetectorService.detectDataAttributes(html);
       
@@ -320,7 +358,9 @@ class CrawlerService {
             latitude: map.coordinates.lat.toString(),
             longitude: map.coordinates.lon.toString(),
             mapUrl: map.src,
-            extractionMethod: 'map-iframe'
+            extractionMethod: 'map-iframe',
+            confidence: 0.90,
+            level: 'HIGH'
           });
         }
       });
@@ -331,33 +371,40 @@ class CrawlerService {
           address: '',
           latitude: coord.lat.toString(),
           longitude: coord.lon.toString(),
+          confidence: 0.90,
+          level: 'HIGH',
           extractionMethod: 'data-attribute'
         });
       });
 
       logger.info(`📍 Strategy 3 (Maps): ${maps.length + mapCoords.length} coordinates`);
 
-      // Strategy 4: Check if page needs JavaScript rendering (Playwright)
+      // Strategy 4: Check if page needs JavaScript rendering (Playwright - 85% confidence)
       const needsJs = playwrightRendererService.needsJsRendering(html);
+      const isLocationPage = classification.type === 'locations' || url.includes('location') || url.includes('office');
       
-      if (needsJs || locations1.length === 0) {
-        logger.info('🎭 Page needs JavaScript rendering, using Playwright...');
-        const playwrightLocations = await playwrightRendererService.extractLocations(url);
-        
-        // If we already have locations from HTML extraction, XHR data might include
-        // hidden/filtered locations. Only use XHR if we have nothing or very few locations
-        if (locations1.length > 10) {
-          logger.info(`📍 Strategy 4 (Playwright XHR): ${playwrightLocations.length} found, but skipping since we already have ${locations1.length} from HTML`);
+      // Always run Playwright for dedicated location/office pages OR if page needs JS rendering
+      if (needsJs || locations1.length === 0 || isLocationPage) {
+        if (isLocationPage) {
+          logger.info('🎭 Detected location/office page, using Playwright for complete extraction...');
         } else {
-          allRawLocations.push(...playwrightLocations);
-          logger.info(`📍 Strategy 4 (Playwright XHR): ${playwrightLocations.length} locations`);
+          logger.info('🎭 Page needs JavaScript rendering, using Playwright...');
         }
+        
+        const playwrightLocations = await playwrightRendererService.extractLocations(url);
+        const playwrightWithConfidence = playwrightLocations.map(loc => ({ ...loc, confidence: loc.confidence || 0.85, level: 'HIGH' }));
+        allRawLocations.push(...playwrightWithConfidence);
+        logger.info(`📍 Strategy 4 (Playwright XHR): ${playwrightLocations.length} locations added`);
       }
 
       logger.info(`\n📊 Total raw locations extracted: ${allRawLocations.length}`);
 
+      // NEW: Stage 10 - Confidence Filtering (minimum 70% threshold)
+      const confidentLocations = allRawLocations.filter(loc => (loc.confidence || 0) >= 0.70);
+      logger.info(`✅ Confidence filter (>=0.70): ${allRawLocations.length} → ${confidentLocations.length} locations`);
+
       // Apply enhanced deduplication with fuzzy matching
-      const deduplicated = await enhancedDeduplicationService.deduplicateWithFuzzy(allRawLocations);
+      const deduplicated = await enhancedDeduplicationService.deduplicateWithFuzzy(confidentLocations);
       logger.info(`✨ After deduplication: ${deduplicated.length} unique locations`);
 
       // Enrich with geocoding

@@ -17,11 +17,13 @@ export const DataSourceToggle = ({ loading }) => {
         >
           {useMockData ? '📦 Mock Data' : '🌐 API Data'}
         </button>
-        <span className="record-count">
-          {useMockData ? mockLocations.length : apiData.length} records
-        </span>
+        {!loading && (
+          <span className="record-count">
+            {useMockData ? mockLocations.length : apiData.length} records
+          </span>
+        )}
       </div>
-      {apiData.length > 0 && (
+      {apiData.length > 0 && !loading && (
         <button
           onClick={clearApiData}
           disabled={loading}

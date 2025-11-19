@@ -206,6 +206,62 @@ export default function CustomDataGrid({
   const renderCell = (column, row) => {
     const value = row[column.field];
 
+    // Confidence badge rendering
+    if (column.field === 'confidence') {
+      const confidence = parseFloat(value);
+      if (isNaN(confidence)) return <span className="confidence-badge confidence-unknown">-</span>;
+
+      let badgeClass = 'confidence-badge ';
+      let label = '';
+
+      if (confidence >= 0.90) {
+        badgeClass += 'confidence-high';
+        label = 'HIGH';
+      } else if (confidence >= 0.75) {
+        badgeClass += 'confidence-medium-high';
+        label = 'MEDIUM-HIGH';
+      } else if (confidence >= 0.70) {
+        badgeClass += 'confidence-medium';
+        label = 'MEDIUM';
+      } else {
+        badgeClass += 'confidence-low';
+        label = 'LOW';
+      }
+
+      return (
+        <span className={badgeClass} title={`Confidence: ${(confidence * 100).toFixed(0)}%`}>
+          {label}
+        </span>
+      );
+    }
+
+    // Extraction method badge rendering
+    if (column.field === 'extractionMethod') {
+      if (!value) return <span className="method-badge method-unknown">unknown</span>;
+      
+      const methodLabels = {
+        'json-ld': 'JSON-LD',
+        'microdata': 'Microdata',
+        'dom-block': 'DOM Block',
+        'heuristic': 'Heuristic',
+        'map-iframe': 'Map',
+        'playwright-xhr': 'XHR',
+        'inline-script': 'Script',
+        'sequential-headers': 'Headers',
+        'data-attribute': 'Data Attr',
+        'location-list': 'List'
+      };
+
+      const label = methodLabels[value] || value;
+      const methodClass = value.replace(/[^a-z0-9]/gi, '-');
+
+      return (
+        <span className={`method-badge method-${methodClass}`} title={`Extraction Method: ${value}`}>
+          {label}
+        </span>
+      );
+    }
+
     if (column.field === 'qualityScore') {
       const score = parseFloat(value);
       if (isNaN(score)) return <span>-</span>;

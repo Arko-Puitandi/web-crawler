@@ -8,7 +8,7 @@ export const API_CONFIG = {
     LOCATIONS: '/api/crawl/locations',
     PROGRESS: '/api/progress',
   },
-  TIMEOUT: 30000, // 30 seconds
+  TIMEOUT: 120000, // 120 seconds (2 minutes)
 };
 
 // Helper function to build full API URL

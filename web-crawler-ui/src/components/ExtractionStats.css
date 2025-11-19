@@ -1,0 +1,143 @@
+/* Extraction Statistics Panel */
+.extraction-stats {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.2);
+  color: white;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.stats-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stats-total {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+}
+
+.stat-card-full {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.stat-card-full h4 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Confidence Bars */
+.confidence-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.confidence-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.bar-label .badge-high,
+.bar-label .badge-medium-high,
+.bar-label .badge-medium,
+.bar-label .badge-low {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.bar-label .badge-high {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+}
+
+.bar-label .badge-medium-high {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+}
+
+.bar-label .badge-medium {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: white;
+}
+
+.bar-label .badge-low {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+}
+
+.bar-count {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.bar-track {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease-out;
+  animation: fillBar 0.8s ease-out;
+}
+
+@keyframes fillBar {
+  from {
+    width: 0%;
+  }
+}
+
+.bar-fill-high {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.bar-fill-medium-high {
+  background: linear-gradient(90deg, #3b82f6, #2563eb);
+}
+
+.bar-fill-medium {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.bar-fill-low {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}

@@ -13,6 +13,7 @@ import { FilterBox } from './components/FilterBox';
 import { AdvancedFilter } from './components/AdvancedFilter';
 import { MapVisualization } from './components/MapVisualization';
 import { BulkUpload } from './components/BulkUpload';
+import { ExtractionProgress } from './components/ExtractionProgress';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import './App.css';
@@ -42,6 +43,7 @@ function App() {
     url,
     filterMockData,
     setApiDataAndSwitch,
+    clearApiData,
   } = useAppContext();
 
   const { notification, showSuccess, showError } = useNotification();
@@ -93,10 +95,20 @@ function App() {
   const handleSearch = async (e) => {
     e.preventDefault();
 
+    // Reset current page when starting new search
+    setCurrentPage(0);
+
     // Parse multiple URLs (split by newlines, commas, or semicolons)
     const urls = url
       .split(/[\n,;]+/)
-      .map(u => u.trim())
+      .map(u => {
+        u = u.trim();
+        // Add https:// if no protocol is specified
+        if (u && !u.match(/^https?:\/\//i)) {
+          u = 'https://' + u;
+        }
+        return u;
+      })
       .filter(u => u.length > 0);
 
     if (urls.length === 0) {
@@ -115,6 +127,9 @@ function App() {
       }
       return;
     }
+
+    // Clear old API data immediately before starting new search
+    clearApiData();
 
     // API mode - send all URLs to backend at once
     const urlsToFetch = urls.length === 1 ? urls[0] : urls;
@@ -228,6 +243,13 @@ function App() {
           <SearchBar onSubmit={handleSearch} loading={isLoading} />
         </section>
 
+        {/* Extraction Progress (Inline) */}
+        {isLoading && (
+          <section className="section">
+            <ExtractionProgress isLoading={isLoading} extractionStage="Extracting Locations" />
+          </section>
+        )}
+
         {/* Notifications */}
         <Notifications notification={notification} />
 
@@ -268,12 +290,13 @@ function App() {
         )}
 
         {/* Data Grid with Filter Panel */}
-        <section className="section">
-          <div className="data-grid-header">
-            <h3 className="section-title">
-              Location Data ({filteredData.length} {filteredData.length !== activeData.length ? `of ${activeData.length}` : ''} rows)
-            </h3>
-            <div className="data-grid-actions">
+        {!isLoading && (
+          <section className="section">
+            <div className="data-grid-header">
+              <h3 className="section-title">
+                Location Data ({filteredData.length} {filteredData.length !== activeData.length ? `of ${activeData.length}` : ''} rows)
+              </h3>
+              <div className="data-grid-actions">
               <button 
                 className="btn-action"
                 onClick={() => setShowBulkUpload(true)}
@@ -285,7 +308,7 @@ function App() {
                 className="btn-action"
                 onClick={() => setShowMap(!showMap)}
                 title="Toggle Map"
-                disabled={activeData.length === 0}
+                disabled={activeData.length === 0 || isLoading}
               >
                 🗺️ {showMap ? 'Hide' : 'Show'} Map
               </button>
@@ -293,7 +316,7 @@ function App() {
                 className="filter-btn" 
                 onClick={() => setShowFilterModal(!showFilterModal)}
                 type="button"
-                disabled={activeData.length === 0}
+                disabled={activeData.length === 0 || isLoading}
               >
                 ⚙️ Columns
               </button>
@@ -342,7 +365,8 @@ function App() {
               />
             )}
           </div>
-        </section>
+          </section>
+        )}
       </div>
 
       {/* Location Detail Modal */}

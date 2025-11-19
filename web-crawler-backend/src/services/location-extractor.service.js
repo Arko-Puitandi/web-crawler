@@ -63,6 +63,18 @@ class LocationExtractorService {
     this.logLocations(dataAttrLocs, 8);
     allLocations.push(...dataAttrLocs);
 
+    // Strategy 9: Inline JavaScript JSON Data
+    const scriptLocs = this.extractFromInlineScripts($, url);
+    logger.info(`📊 Strategy 9 [Inline Scripts]: Found ${scriptLocs.length} locations`);
+    this.logLocations(scriptLocs, 9);
+    allLocations.push(...scriptLocs);
+
+    // Strategy 10: Sequential Headers Pattern (Nutanix-style: h3 country > h3 city > address paragraphs)
+    const headerLocs = this.extractFromSequentialHeaders($, url);
+    logger.info(`📊 Strategy 10 [Sequential Headers]: Found ${headerLocs.length} locations`);
+    this.logLocations(headerLocs, 10);
+    allLocations.push(...headerLocs);
+
     logger.info(`\n${'='.repeat(80)}`);
     logger.info(`📦 TOTAL EXTRACTED: ${allLocations.length} locations (before deduplication)`);
     logger.info(`${'='.repeat(80)}\n`);
@@ -540,6 +552,149 @@ class LocationExtractorService {
         logger.info(`  [${strategyNum}.${idx + 1}] ${loc.name}: ${loc.address.substring(0, 60)}...`);
       });
     }
+  }
+
+  /**
+   * Extract locations from inline JavaScript/JSON data
+   * Many SPAs embed location data in script tags as window.INITIAL_DATA or similar
+   */
+  extractFromInlineScripts($, url) {
+    const locations = [];
+    
+    $('script:not([src])').each((i, elem) => {
+      const scriptContent = $(elem).html();
+      if (!scriptContent || scriptContent.length < 50) return;
+      
+      try {
+        // Look for patterns like: window.DATA = {...}, var offices = [...], const locations = [...]
+        const patterns = [
+          /(?:window\.|var |const |let )\w*(?:office|location|site|branch|address|contact)\w*\s*=\s*(\[[\s\S]*?\]);/gi,
+          /(?:window\.|var |const |let )\w*data\w*\s*=\s*({[\s\S]*?});/gi,
+          /"(?:offices|locations|sites|branches|addresses)"\s*:\s*(\[[^\]]*\])/gi
+        ];
+        
+        patterns.forEach(pattern => {
+          let match;
+          while ((match = pattern.exec(scriptContent)) !== null) {
+            try {
+              const jsonStr = match[1];
+              const data = JSON.parse(jsonStr);
+              
+              // Parse the extracted JSON for locations
+              const parsedLocs = this.parseJsonForLocations(data, url);
+              locations.push(...parsedLocs);
+            } catch (e) {
+              // Not valid JSON or parsing failed
+            }
+          }
+        });
+      } catch (e) {
+        // Script parsing error
+      }
+    });
+    
+    return locations;
+  }
+
+  /**
+   * Parse JSON data recursively for location information
+   */
+  parseJsonForLocations(data, url) {
+    const locations = [];
+    
+    const scan = (obj, depth = 0) => {
+      if (depth > 15 || !obj || typeof obj !== 'object') return;
+      
+      // Check if this object looks like a location
+      const hasAddress = obj.address || obj.street || obj.city || obj.country ||
+                        obj.Address || obj.City || obj.State || obj.Country;
+      const hasCoords = (obj.lat && obj.lon) || (obj.latitude && obj.longitude) ||
+                       (obj.Latitude && obj.Longitude);
+      const hasOfficeFields = obj.office || obj.location || obj.site || obj.branch ||
+                             obj.officeName || obj.locationName || obj.siteName;
+      
+      if (hasAddress || hasCoords || hasOfficeFields) {
+        const street = obj.address || obj.street || obj.streetAddress || obj.Address || '';
+        const city = obj.city || obj.City || obj.locality || '';
+        const state = obj.state || obj.State || obj.region || obj.province || '';
+        const country = obj.country || obj.Country || obj.countryCode || '';
+        const postalCode = obj.postalCode || obj.zip || obj.zipcode || '';
+        
+        const fullAddress = `${street}, ${city}, ${state} ${postalCode}, ${country}`.replace(/,\s*,/g, ',').trim();
+        
+        if (fullAddress.length > 10) {
+          locations.push({
+            name: obj.name || obj.title || obj.officeName || obj.locationName || obj.siteName || 'Office',
+            address: fullAddress,
+            activity: this.guessActivity(obj.name || obj.type || ''),
+            usageShare: 'Exclusive',
+            phone: obj.phone || obj.telephone || obj.phoneNumber || '',
+            email: obj.email || '',
+            extractionMethod: 'inline-script'
+          });
+        }
+      }
+      
+      // Recursively scan
+      for (const key of Object.keys(obj)) {
+        if (Array.isArray(obj[key])) {
+          obj[key].forEach(item => scan(item, depth + 1));
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+          scan(obj[key], depth + 1);
+        }
+      }
+    };
+    
+    scan(data);
+    return locations;
+  }
+
+  /**
+   * Extract locations from sequential header pattern
+   * SIMPLE APPROACH: Every h3 is either a country or city, extract text until next h3
+   */
+  extractFromSequentialHeaders($, url) {
+    const locations = [];
+    let currentCountry = '';
+    
+    $('h3').each((i, elem) => {
+      const $h3 = $(elem);
+      const headerText = $h3.text().trim();
+      
+      if (!headerText) return;
+      
+      // If ALL CAPS or has parentheses = Country
+      if (headerText === headerText.toUpperCase() || headerText.includes('(')) {
+        currentCountry = headerText;
+        return;
+      }
+      
+      // Otherwise it's a city - extract everything until next h3
+      if (currentCountry) {
+        const cityName = headerText;
+        
+        // Get all text between this h3 and next h3
+        const textBlocks = [];
+        $h3.nextUntil('h3').each((j, el) => {
+          const text = $(el).text().trim();
+          if (text) textBlocks.push(text);
+        });
+        
+        const fullText = textBlocks.join(' ').replace(/\s+/g, ' ');
+        
+        if (fullText.length > 20) {
+          locations.push({
+            name: `${cityName}, ${currentCountry}`,
+            address: fullText.substring(0, 500),
+            activity: 'Office',
+            usageShare: 'Exclusive',
+            extractionMethod: 'sequential-headers'
+          });
+        }
+      }
+    });
+    
+    return locations;
   }
 }
 
